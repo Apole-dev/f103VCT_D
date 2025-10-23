@@ -356,7 +356,7 @@ static void MX_TIM1_Init(void)
   sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
   // Deadtime Ayari: 72MHz clock -> 13.88ns per tick.
   // 181 * 13.88ns = ~2.5 microsecond deadtime.
-  // IPM datasheet'ine gore bu degeri ayarlayin.
+ 
   sBreakDeadTimeConfig.DeadTime = 181; 
   sBreakDeadTimeConfig.BreakState = TIM_BREAK_ENABLE; // ALM pinleri icin Break aktif
   sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_LOW; // ALM pinleri active-low
@@ -368,8 +368,7 @@ static void MX_TIM1_Init(void)
   /* USER CODE BEGIN TIM1_Init 2 */
 
   /* USER CODE END TIM1_Init 2 */
-  // HAL_TIM_MspPostInit, GPIO init icinde cagiriliyor olmali
-  // Eger CubeMX ile yapildiysa PE pinleri AF olarak ayarlanmistir.
+
 }
 
 /**
