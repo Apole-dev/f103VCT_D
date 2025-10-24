@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stm32f1xx_hal_tim.h>
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -70,6 +71,9 @@ uint32_t initial_open_loop_ccr = 50; // soft start opening value
 uint32_t desired_open_loop_ccr = 50; // drive ccr value after soft start cycle
 uint32_t ccr_ramp_slope = 32; // open loop ccr value increment value
 float ms_counter;
+
+volatile uint32_t throttle_pwm_demand = 0;
+volatile bool is_closed_loop_control_active = false; // Closed loop control status(first state is open loop)
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -136,7 +140,7 @@ int main(void)
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 
-  // IPM'e giden sinyal cikislarini etkinlestir (Main Output Enable)
+  // IPM'e giden sinyal cikislarini etkinlestir (Main Output Enable) //death time icin zorunlu
   __HAL_TIM_MOE_ENABLE(&htim1);
 
   // Komutasyon icin zamanlayici interrupt'ini baslat
@@ -485,9 +489,19 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : PD2 PD3 PD4 (HALL SENSOR PINLERI) */
   GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL; // Harici pull-up varsa
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING; // Cikislar hem yukselen hem de dusen kenarda kesme
+  GPIO_InitStruct.Pull = GPIO_NOPULL;// harici pull up var devrede
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  //Set hall sensor pins interrupt priority and enable them
+  HAL_NVIC_SetPriority(EXTI1_IRQn,1,0);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+  HAL_NVIC_SetPriority(EXTI2_IRQn,1,0);
+  HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+  HAL_NVIC_SetPriority(EXTI3_IRQn,1,0);
+  HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+  HAL_NVIC_SetPriority(EXTI4_IRQn,1,0);
+  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 
   /*Configure peripheral I/O remapping */
   __HAL_AFIO_REMAP_TIM1_ENABLE(); // TIM1 pinlerini PE'ye yonlendir
@@ -582,7 +596,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
       sector_change_interval_counter = 0;
       sector = 5; // Alignment sektoru (W -> U)
       
-      // Alignment icin CCR'yi ayarla (Eski kodda bu yoktu, eklendi)
+      // Alignment icin CCR'yi ayarla (Eskisindee bu yoktu yeni eklendi)
       initial_open_loop_ccr = motor_align_ccr_value; 
       
       motor_align_time_counter++;//1 -> 2  -> 3(reached the limit)
@@ -594,7 +608,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
       } else { //Hizalama bitti 
 
-    // Alignment sonrasi baslangic CCR'sini tekrar ayarla
+    // Alignment sonrasi baslangic CCRsini tekrar ayarla
     if (ol_sector_counter == 0) { // Sadece ilk seferde
          initial_open_loop_ccr = 50; // soft start opening value (pwm duty cyle)
     }
@@ -643,12 +657,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   {
     // HATA DURUMU (ALM pinlerinden biri LOW'a cekildi)
     
-    // 1. PWM Cikislarini Kapat
-    // TIM1 Break (BDTR) register'i MOE bitini (Main Output Enable) 
-    // donanimsal olarak 0'a ceker. Bu, yazilimdan daha hizlidir.
-    // Eger TIM1_BKIN pini (PB12 veya PE15) bu ALM'lere bagliysa
-    // bu islem otomatiktir.
-    // Eger degilse, yazilimsal olarak kapat:
+    // PWM Cikislarini Kapat
      __HAL_TIM_MOE_DISABLE(&htim1); // TUM 6 CIKISI KES
      
      // veya CCR'leri 0'la
