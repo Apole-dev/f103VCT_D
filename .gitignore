@@ -1,0 +1,83 @@
+# .gitignore for STM32 embedded C project (VSCode + Makefile)
+
+# Build output directories
+/build/
+/Build/
+/bin/
+/out/
+/obj/
+/Debug/
+/Release/
+
+# Generic compiled/linked files
+*.o
+*.obj
+*.elf
+*.axf
+*.out
+*.map
+*.bin
+*.hex
+*.srec
+*.lst
+*.a
+*.lib
+
+# Dependency and intermediate files
+*.d
+*.dep
+*.tmp
+
+# Linker/loader/generated symbols
+*.sym
+*.toc
+
+# Firmware artifacts
+firmware.bin
+firmware.hex
+
+# VSCode workspace / local settings
+.vscode/
+*.code-workspace
+
+# Common IDE/project files to ignore
+.project
+.cproject
+*.launch
+*.workspace
+
+# Keil / IAR / other toolchain files
+*.uvproj*
+*.uvopt*
+*.ewp*
+*.ewt*
+*.log
+
+# OpenOCD / ST-Link / debug logs
+*.log
+.gdb_history
+.gdbinit
+
+# Backup, temp and editor files
+*~
+*.swp
+*.swo
+*.bak
+*.orig
+
+# Python cache (if scripts used)
+__pycache__/
+*.pyc
+
+# Tags and ctags
+tags
+TAGS
+
+# CMake/misc build system files (if present)
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile.user
+
+# PlatformIO (if accidentally used)
+.pio/
